@@ -1,0 +1,185 @@
+<html>
+
+	<head>
+		<script src="../../Programming/jquery.js" ></script>
+		<script>
+		
+			var dim = 200;
+			
+			function dist(  x1, y1, x2, y2 ){
+				return Math.sqrt(Math.pow(x1-x2,2) + Math.pow(y1 - y2,2));
+			}
+			
+			
+			function coords( note_num ) {
+				return [
+					dim / 2 * Math.cos(note_num / 144 * Math.PI * 2),
+					dim / 2 * Math.sin(note_num / 144 * Math.PI * 2)
+				];					
+			}
+			
+			function Color( r, b, g ) {
+				this.r = r;
+				this.b = b;
+				this.g = g;
+				this.weight = 0;
+				return this;
+			}
+		
+						
+			function mix( colors, dist ) {
+				var r = 0, b = 0, g = 0;
+				var w = 0;
+				
+				var max_scale = 0, index = -1, wt = 0, d = 0;
+				
+				
+				for ( var i = 0; i < colors.length; ++i ) {
+					var scale = Math.pow(colors[i].weight,1) / Math.pow(dist[i], 2);
+					r += scale * colors[i].r;
+					b += scale * colors[i].b;
+					g += scale * colors[i].g;
+					w += scale;
+				}
+				
+				r /= w; b /= w; g /= w;
+								
+				return new Color( r, b, g);
+			}
+			function Complex( a, b ) {
+				this.a = a;
+				this.b = b;
+				return this;
+			}
+		
+			var multiply = function( z, w ) {
+				return new Complex ( (144 + z.a * w.a - z.b * w.b)%12, (z.a * w.b + z.b * w.a + 144)% 12);
+			}	
+		
+		
+				
+			var pos = new Array(144);
+		
+			for ( var i = 0; i < 12; ++i ) {
+				for ( var j = 0; j < 12; ++j ) {
+					pos[i*12 + j] = coords(i * 12 + j);
+				}
+			}
+
+			var colors = new Array(144);
+			
+			
+							
+			for ( var i = 0; i < 144; ++i ) {
+				colors[i] = new Color(
+					Math.random() * 255 | 0,
+					Math.random() * 255 | 0,
+					Math.random() * 255 | 0
+				);
+			}
+
+
+			function get_list( x, y) {
+				var list = new Array(144);
+				for ( var k = 0; k < list.length; ++k ) {
+					list[k] = dist( x, y, pos[k][0], pos[k][1]);
+				}
+				return list;
+			}
+
+			function go ( value, key ) {
+				
+				for ( var i = 0; i < colors.length; ++i ) colors[i].weight = 0;
+				
+				value = value.split("\n").filter(function(a){return a.length;});
+				
+				var rank = {
+					"c" : 0,
+					"c+" : 1,
+					"d-" : 1,
+					"d" : 2,
+					"d+": 3,
+					"e-" : 3,
+					"e": 4,
+					"f-" : 4,
+					"e+": 5,
+					"f": 5,
+					"f+" : 6,
+					"g-" : 6,
+					"g": 7,
+					"g+": 8,
+					"a-": 8,
+					"a": 9,
+					"a+": 10,
+					"b-": 10,
+					"b": 11,
+					"c-": 11,
+					"b+": 0
+				}
+				
+				key = rank[key];
+				
+				for ( var i = 0; i < value.length; ++i ) {
+					var row = value[i].split(" ");
+					var it = new Complex(1, 0);
+					for ( var j = 0; j < row.length; ++j ) {
+						var val = new Complex( rank[row[j]], (12 + rank[row[j]] - key )%12);
+						it = multiply( it, val );
+					}
+					console.log(it);
+					colors[it.a * 12 + it.b].weight++;
+				}
+				
+				var html = "<table>";
+				
+				for ( var i = 0; i < dim; ++i ) {
+					html += "<tr>";
+					
+					for ( var j = 0; j < dim; ++j ) {
+						var x = j - dim/2, y = i - dim/2;
+						var list = get_list(x, y);
+						var col = mix(colors, list);
+														
+						html += "<td style='background-color:rgb(" + (col.r|0) + "," + (col.g|0) + "," + (col.b|0) + ")' ></td>";
+
+					}
+					
+					html += "</tr>";
+					
+				}
+				
+				html += "</table>";
+				
+				//console.log(colors);
+				//console.log(pos);
+				
+				$("#circle").html(html);
+				
+			}
+		
+		
+		</script>
+		
+		<style>
+			td {
+				width:3px;
+				height:3px;
+			}
+			table {
+				border-collapse:collapse;
+			}
+		</style>
+	
+	</head>
+	<body>
+	
+		<input id="key" />
+		<textarea id="input" ></textarea>
+		
+		<button onclick="go($('#input').val(), $('#key').val())" >Run</button>
+	
+		<div id="circle" ></div>
+	
+	</body>
+</html>
+
